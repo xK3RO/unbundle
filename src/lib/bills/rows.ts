@@ -107,7 +107,9 @@ export function rowsToBill(billRow: unknown, lineRows: unknown[], eobRows: unkno
     providerName: b.provider_name ?? "",
     serviceStart: b.service_start,
     serviceEnd: b.service_end,
-    totalBilledCents: b.total_billed_cents ?? 0,
+    // A null total means the bill printed none; show the sum of the rows instead.
+    totalBilledCents: b.total_billed_cents ?? lineRows.map(rowToLineItem).reduce((sum, l) => sum + l.chargeCents, 0),
+    totalPrinted: b.total_billed_cents !== null,
     insuranceStatus: b.insurance_status,
     lineItems: lineRows.map(rowToLineItem),
     eobLines: eobRows.map(rowToEobLine),
@@ -156,7 +158,7 @@ export function billToRow(bill: ExtractedBill) {
     provider_name: bill.providerName,
     service_start: bill.serviceStart,
     service_end: bill.serviceEnd,
-    total_billed_cents: bill.totalBilledCents,
+    total_billed_cents: bill.totalPrinted ? bill.totalBilledCents : null,
     insurance_status: bill.insuranceStatus,
   };
 }

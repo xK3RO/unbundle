@@ -171,6 +171,7 @@
     "serviceDatesRange": "{start} – {end}",
     "serviceDatesUnknown": "No encontradas",
     "totalBilled": "Total facturado",
+    "totalFromRows": "Esta factura no muestra un total, así que esta es la suma de sus filas.",
     "progressLabel": "Filas verificadas",
     "progress": "{verified} de {total} filas verificadas",
     "needsAttention": "{count, plural, one {# fila necesita una revisión más atenta} other {# filas necesitan una revisión más atenta}}",
@@ -358,6 +359,7 @@
       "datesUnknown": "No encontradas",
       "dateRange": "{start} – {end}",
       "totalBilled": "Total facturado",
+      "totalFromRows": "La factura no muestra un total, así que esta es la suma de sus filas.",
       "columns": {
         "finding": "Hallazgo",
         "codes": "Códigos",
@@ -742,6 +744,7 @@
       "busy": "Esta factura ya se está leyendo. Espere un minuto.",
       "rate_limited": "Llegó al límite por hora para leer facturas. Inténtelo más tarde.",
       "unavailable": "La lectura de facturas está desactivada por ahora. Inténtelo más tarde.",
+      "eob_only": "Esto parece un estado de cuenta del seguro (Explicación de Beneficios), no una factura. Suba la factura detallada de su proveedor.",
       "unreadable": "No pudimos leer esta factura con confianza. Pruebe con una foto más nítida y bien iluminada, o vuelva a intentarlo.",
       "provider_busy": "El servicio de lectura está ocupado. Espere un minuto e inténtelo de nuevo.",
       "file_too_large": "Uno de sus archivos es demasiado grande para que lo leamos. Pruebe con una foto de menos páginas a la vez, o con un archivo más pequeño.",

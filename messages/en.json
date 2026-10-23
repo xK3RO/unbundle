@@ -171,6 +171,7 @@
     "serviceDatesRange": "{start} – {end}",
     "serviceDatesUnknown": "Not found",
     "totalBilled": "Total billed",
+    "totalFromRows": "This bill doesn't print a total, so this is the sum of its rows.",
     "progressLabel": "Rows verified",
     "progress": "{verified} of {total} rows verified",
     "needsAttention": "{count, plural, one {# row needs a closer look} other {# rows need a closer look}}",
@@ -358,6 +359,7 @@
       "datesUnknown": "Not found",
       "dateRange": "{start} – {end}",
       "totalBilled": "Total billed",
+      "totalFromRows": "The bill doesn't print a total, so this is the sum of its rows.",
       "columns": {
         "finding": "Finding",
         "codes": "Codes",
@@ -742,6 +744,7 @@
       "busy": "This bill is already being read. Give it a minute.",
       "rate_limited": "You've reached the hourly limit for reading bills. Please try again later.",
       "unavailable": "Bill reading is turned off right now. Please try again later.",
+      "eob_only": "This looks like an insurance statement (Explanation of Benefits), not a bill. Upload the itemized bill from your provider.",
       "unreadable": "We couldn't read this bill reliably. Try a clearer, well-lit photo, or retry.",
       "provider_busy": "The reading service is busy. Please wait a minute and try again.",
       "file_too_large": "One of your files is too large for us to read. Try a photo of fewer pages at a time, or a smaller file.",

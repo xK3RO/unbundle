@@ -78,6 +78,34 @@ describe("rowsToBill", () => {
     );
     expect(bill.providerName).toBe("");
     expect(bill.lineItems).toHaveLength(1);
+    expect(bill.totalPrinted).toBe(true);
+  });
+
+  it("reads a null total as not printed and shows the sum of the rows", () => {
+    const bill = rowsToBill(
+      {
+        provider_name: "Clinic",
+        service_start: null,
+        service_end: null,
+        total_billed_cents: null,
+        insurance_status: null,
+        extraction_status: "needs_review",
+      },
+      [lineRow, { ...lineRow, id: "22222222-2222-4222-8222-222222222222", charge_cents: 4500 }],
+      [],
+    );
+    expect(bill.totalBilledCents).toBe(20000);
+    expect(bill.totalPrinted).toBe(false);
+  });
+
+  it("shows 0 for a null total with no rows", () => {
+    const bill = rowsToBill(
+      { provider_name: null, service_start: null, service_end: null, total_billed_cents: null, insurance_status: null, extraction_status: "needs_review" },
+      [],
+      [],
+    );
+    expect(bill.totalBilledCents).toBe(0);
+    expect(bill.totalPrinted).toBe(false);
   });
 });
 
@@ -95,5 +123,10 @@ describe("lineItemToRow / billToRow round trip", () => {
     });
     expect(row).not.toHaveProperty("id");
     expect(billToRow(bill)).toMatchObject({ total_billed_cents: bill.totalBilledCents });
+  });
+
+  it("stores a total that was not printed as null, so it is re-added from the rows on read", () => {
+    const bill = ExtractedBillSchema.parse({ ...demoBill, totalPrinted: false });
+    expect(billToRow(bill).total_billed_cents).toBeNull();
   });
 });
