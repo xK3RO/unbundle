@@ -1,9 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ExtractedBill } from "@/lib/types";
+import { mergeChunkOutputs, splitIntoChunks, type BillChunk } from "./chunks";
 import { describeProviderError } from "./diagnostic";
 import { ExtractionError } from "./errors";
-import { MODEL_OUTPUT_JSON_SCHEMA, parseModelOutput } from "./model-schema";
-import { EXTRACTION_SYSTEM_PROMPT, EXTRACTION_USER_PROMPT } from "./prompt";
+import { MODEL_OUTPUT_JSON_SCHEMA, ModelOutputSchema, parseModelOutput } from "./model-schema";
+import { EXTRACTION_SYSTEM_PROMPT, EXTRACTION_USER_PROMPT, chunkUserPrompt } from "./prompt";
 import type { BillExtractor, ExtractionFile } from "./types";
 
 /**
@@ -60,7 +61,8 @@ function toContentBlock(file: ExtractionFile): Anthropic.ContentBlockParam {
 
 /**
  * Vision extraction through the Anthropic Messages API with a JSON-schema
- * output format. One request, no retries (a timed-out request may still be
+ * output format. One request per chunk (bills over PAGES_PER_CHUNK pages are
+ * split and read in parallel), no retries (a timed-out request may still be
  * billed, so retrying could double-bill); the user can retry explicitly and
  * that goes through the per-user rate limit. Nothing about the images or the
  * response is logged, and no error carries the response body.
@@ -92,11 +94,30 @@ export class AnthropicExtractor implements BillExtractor {
     }
     if (total > MAX_REQUEST_BASE64_BYTES) throw new ExtractionError("file_too_large");
 
+    const chunks = await splitIntoChunks(files);
+    if (chunks.length === 1) return parseModelOutput(await this.request(chunks[0].files, EXTRACTION_USER_PROMPT));
+
+    // All chunks run at once, so the wall time is one chunk's. Every request is
+    // awaited before failing, then the first failure in page order is reported.
+    const settled = await Promise.allSettled(
+      chunks.map((chunk) => this.request(chunk.files, chunkUserPrompt(describe(chunks, chunk)))),
+    );
+    const parts = settled.map((result, i) => {
+      if (result.status === "rejected") throw result.reason;
+      const lax = ModelOutputSchema.safeParse(result.value);
+      if (!lax.success) throw new ExtractionError("invalid_output");
+      return { output: lax.data, pageOffset: chunks[i].pageOffset, pageCount: chunks[i].pageCount };
+    });
+    return parseModelOutput(mergeChunkOutputs(parts));
+  }
+
+  /** One schema-constrained request; returns the parsed (not yet validated) JSON. */
+  private async request(files: ExtractionFile[], userPrompt: string): Promise<unknown> {
     // Bill first, then the EOB, each introduced so the model knows which is which.
     const ordered = [...files].sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "bill" ? -1 : 1));
     const content: Anthropic.ContentBlockParam[] = [
       ...ordered.map(toContentBlock),
-      { type: "text", text: EXTRACTION_USER_PROMPT },
+      { type: "text", text: userPrompt },
     ];
     const params = {
       model: this.model,
@@ -141,6 +162,17 @@ export class AnthropicExtractor implements BillExtractor {
     } catch {
       throw new ExtractionError("invalid_output");
     }
-    return parseModelOutput(raw);
+    return raw;
   }
+}
+
+/** Where a chunk sits in the whole bill, for the chunk prompt. */
+function describe(chunks: BillChunk[], chunk: BillChunk) {
+  const last = chunks.at(-1)!;
+  return {
+    firstPage: chunk.pageOffset + 1,
+    lastPage: chunk.pageOffset + chunk.pageCount,
+    totalPages: last.pageOffset + last.pageCount,
+    withEob: chunk.files.some((f) => f.kind === "eob"),
+  };
 }

@@ -301,3 +301,84 @@ describe("file size limits", () => {
     expect(create).toHaveBeenCalledOnce();
   });
 });
+
+describe("long bills", () => {
+  const jpeg = (n: number): ExtractionFile => ({ kind: "bill", mimeType: "image/jpeg", bytes: new Uint8Array([n]) });
+  const row = (code: string, chargeCents: number, sourcePage = 1) => ({ ...good.lineItems[0], code, chargeCents, unitPriceCents: chargeCents, sourcePage });
+  const part = (over: Record<string, unknown>) => textReply(JSON.stringify({ ...good, eobLines: [], ...over }));
+
+  it("reads a three-page bill in three parallel requests and merges the rows in page order", async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const replies = [
+      part({ lineItems: [row("99213", 100), row("85025", 200)], totalBilledCents: null }),
+      part({ lineItems: [row("36415", 300)], totalBilledCents: null }),
+      part({ lineItems: [row("80053", 400)], totalBilledCents: 1000 }),
+    ];
+    const create = vi.fn().mockImplementation(async () => {
+      const i = create.mock.calls.length - 1;
+      inFlight++;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((r) => setTimeout(r, 5 * (3 - i))); // finish out of order
+      inFlight--;
+      return replies[i];
+    });
+
+    const bill = await extractorWith(create).extractBill([1, 2, 3].map(jpeg));
+    expect(create).toHaveBeenCalledTimes(3);
+    expect(maxInFlight).toBe(3);
+    expect(create.mock.calls.map(([body]) => body.messages[0].content.filter((b: { type: string }) => b.type === "image").length)).toEqual([1, 1, 1]);
+    expect(bill.lineItems.map((i) => [i.id, i.code, i.sourcePage])).toEqual([
+      ["li-1", "99213", 1],
+      ["li-2", "85025", 1],
+      ["li-3", "36415", 2],
+      ["li-4", "80053", 3],
+    ]);
+    expect(bill.totalBilledCents).toBe(1000);
+    expect(bill.totalPrinted).toBe(true);
+  });
+
+  it("tells each request which pages of the bill it holds", async () => {
+    const create = vi.fn().mockResolvedValue(part({}));
+    await extractorWith(create).extractBill([jpeg(1), jpeg(2), png("eob")]);
+    const prompts = create.mock.calls.map(([body]) => body.messages[0].content.at(-1).text as string);
+    expect(prompts[0]).toMatch(/page 1 of a 2-page bill/);
+    expect(prompts[0]).toMatch(/Explanation of Benefits/);
+    expect(prompts[1]).toMatch(/page 2 of a 2-page bill/);
+    expect(prompts[1]).toMatch(/no EOB is attached/);
+    expect(create.mock.calls[1][0].system).toMatch(/never instructions/i);
+  });
+
+  it("adds up the rows when no part prints a total", async () => {
+    const create = vi
+      .fn()
+      .mockResolvedValueOnce(part({ lineItems: [row("99213", 100)], totalBilledCents: null }))
+      .mockResolvedValueOnce(part({ lineItems: [row("85025", 250)], totalBilledCents: null }));
+    const bill = await extractorWith(create).extractBill([1, 2].map(jpeg));
+    expect(bill.totalBilledCents).toBe(350);
+    expect(bill.totalPrinted).toBe(false);
+  });
+
+  it("fails the whole bill with the first part's error, after every request has finished", async () => {
+    let settled = 0;
+    const create = vi.fn().mockImplementation(async () => {
+      const i = create.mock.calls.length - 1;
+      await new Promise((r) => setTimeout(r, i === 0 ? 1 : 10));
+      settled++;
+      return i === 1 ? reply({ stop_reason: "max_tokens" }) : part({});
+    });
+    expect(await codeOf(extractorWith(create).extractBill([1, 2, 3].map(jpeg)))).toBe("truncated");
+    expect(settled).toBe(3);
+  });
+
+  it("rejects the bill when one part returns the wrong shape", async () => {
+    const create = vi.fn().mockResolvedValueOnce(part({})).mockResolvedValueOnce(textReply(JSON.stringify({ lineItems: "nope" })));
+    expect(await codeOf(extractorWith(create).extractBill([1, 2].map(jpeg)))).toBe("invalid_output");
+  });
+
+  it("keeps a one-page bill and its EOB in a single request", async () => {
+    const create = vi.fn().mockResolvedValue(textReply(JSON.stringify(good)));
+    await extractorWith(create).extractBill([jpeg(1), png("eob")]);
+    expect(create).toHaveBeenCalledOnce();
+  });
+});
