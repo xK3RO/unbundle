@@ -20,6 +20,7 @@ describe("errorMessageKey", () => {
     expect(errorMessageKey("provider_busy")).toBe("provider_busy");
     expect(errorMessageKey("file_too_large")).toBe("file_too_large");
     expect(errorMessageKey("provider_error")).toBe("unreadable");
+    expect(errorMessageKey("eob_only")).toBe("eob_only");
   });
 
   it("falls back to unknown", () => {

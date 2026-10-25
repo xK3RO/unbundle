@@ -230,6 +230,9 @@ export function ReviewTable({
                 <dd className="mt-1 text-lead font-semibold tabular-nums">
                   {formatCents(bill.totalBilledCents)}
                 </dd>
+                {!bill.totalPrinted && (
+                  <dd className="mt-1 text-sm text-muted-foreground">{t("totalFromRows")}</dd>
+                )}
               </div>
             </dl>
             <div className="flex flex-col gap-3" aria-live="polite">

@@ -17,6 +17,7 @@ export const EXTRACTION_ERROR_CODES = [
   "file_unreadable",
   "file_too_large",
   "invalid_output",
+  "eob_only",
   "refused",
   "truncated",
   "timeout",

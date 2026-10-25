@@ -28,6 +28,7 @@ const STATUS: Record<ExtractionErrorCode, number> = {
   file_unreadable: 500,
   file_too_large: 413,
   invalid_output: 502,
+  eob_only: 422,
   refused: 502,
   truncated: 502,
   timeout: 504,

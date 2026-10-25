@@ -107,11 +107,19 @@ export function parseModelOutput(raw: unknown): ExtractedBill {
   if (!lax.success) throw new ExtractionError("invalid_output");
   const out = lax.data;
 
-  // A bill whose total can't be read can't be checked; fail rather than guess.
-  if (out.totalBilledCents === null) throw new ExtractionError("invalid_output");
+  // No printed total: fall back to the sum of the rows (flagged as not printed, and
+  // used only for display; no rule reads it). With no rows there is nothing to add
+  // up: EOB lines alone mean an insurer statement was uploaded instead of a bill.
+  const totalPrinted = out.totalBilledCents !== null;
+  if (!totalPrinted && out.lineItems.length === 0) {
+    throw new ExtractionError(out.eobLines.length > 0 ? "eob_only" : "invalid_output");
+  }
+  const totalBilledCents = out.totalBilledCents ?? out.lineItems.reduce((sum, item) => sum + item.chargeCents, 0);
 
   const strict = ExtractedBillSchema.safeParse({
     ...out,
+    totalBilledCents,
+    totalPrinted,
     serviceStart: textOrNull(out.serviceStart),
     serviceEnd: textOrNull(out.serviceEnd),
     insuranceStatus: textOrNull(out.insuranceStatus),

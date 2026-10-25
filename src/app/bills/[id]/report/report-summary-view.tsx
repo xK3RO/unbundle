@@ -64,6 +64,7 @@ export async function ReportSummaryView({ source }: { source: BillSource }) {
         <div>
           <dt className="text-sm text-muted-foreground">{t("totalBilled")}</dt>
           <dd className="font-semibold tabular-nums">{formatCents(bill.totalBilledCents)}</dd>
+          {!bill.totalPrinted && <dd className="text-sm text-muted-foreground">{t("totalFromRows")}</dd>}
         </div>
       </dl>
 

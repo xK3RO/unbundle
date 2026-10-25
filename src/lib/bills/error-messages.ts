@@ -5,7 +5,7 @@
 export type ErrorMessageKey =
   | "empty" | "too_large" | "unsupported_type" | "pdf_unreadable" | "pdf_encrypted"
   | "pdf_too_many_pages" | "unauthenticated" | "not_found" | "too_many_bills" | "upload"
-  | "busy" | "rate_limited" | "provider_busy" | "file_too_large" | "unavailable" | "unreadable" | "network" | "unknown";
+  | "busy" | "rate_limited" | "provider_busy" | "file_too_large" | "unavailable" | "unreadable" | "eob_only" | "network" | "unknown";
 
 const KEYS: Record<string, ErrorMessageKey> = {
   empty: "empty",
@@ -26,6 +26,7 @@ const KEYS: Record<string, ErrorMessageKey> = {
   missing_api_key: "unavailable",
   invalid_mode: "unavailable",
   invalid_output: "unreadable",
+  eob_only: "eob_only",
   refused: "unreadable",
   truncated: "unreadable",
   timeout: "unreadable",

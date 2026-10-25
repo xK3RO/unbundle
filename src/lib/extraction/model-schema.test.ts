@@ -85,10 +85,45 @@ describe("parseModelOutput", () => {
     }
   });
 
-  it("rejects an unreadable (null) bill total rather than guessing", () => {
+  it("uses the sum of the rows when no total is printed, and marks it not printed", () => {
     const raw = clone();
     raw.totalBilledCents = null;
+    const bill = parseModelOutput(raw);
+    const sum = raw.lineItems.reduce((s: number, l: { chargeCents: number }) => s + l.chargeCents, 0);
+    expect(bill.totalBilledCents).toBe(sum);
+    expect(bill.totalPrinted).toBe(false);
+  });
+
+  it("marks a printed total as printed, even when it differs from the rows", () => {
+    const raw = clone();
+    raw.totalBilledCents = 1;
+    const bill = parseModelOutput(raw);
+    expect(bill.totalBilledCents).toBe(1);
+    expect(bill.totalPrinted).toBe(true);
+  });
+
+  it("calls a document with EOB lines but no bill rows and no total eob_only", () => {
+    const raw = clone();
+    raw.totalBilledCents = null;
+    raw.lineItems = [];
+    expect(code(raw)).toBe("eob_only");
+  });
+
+  it("still rejects output with no rows, no EOB lines and no total", () => {
+    const raw = clone();
+    raw.totalBilledCents = null;
+    raw.lineItems = [];
+    raw.eobLines = [];
     expect(code(raw)).toBe("invalid_output");
+  });
+
+  it("keeps a printed total when there are no rows (summary statements)", () => {
+    const raw = clone();
+    raw.lineItems = [];
+    raw.eobLines = [];
+    const bill = parseModelOutput(raw);
+    expect(bill.totalBilledCents).toBe(raw.totalBilledCents);
+    expect(bill.totalPrinted).toBe(true);
   });
 
   it("accepts an empty bill with no line items", () => {
