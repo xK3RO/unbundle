@@ -109,9 +109,7 @@
     "preview": {
       "label": "De la factura de muestra",
       "caption": "Datos inventados. Cada señal viene de una regla fija."
-    },
-    "story": "Soy estudiante de preparatoria en California. Creé Unbundle para que familias como la mía puedan revisar una factura médica antes de pagarla.",
-    "storyBy": "Rohan, quien creó Unbundle"
+    }
   },
   "Dashboard": {
     "title": "Panel",
@@ -997,7 +995,7 @@
     },
     "built": {
       "title": "Quién lo creó",
-      "body": "Unbundle fue creado por un estudiante para el Congressional App Challenge, CA-43."
+      "body": "Unbundle fue creado por un estudiante para el Congressional App Challenge."
     }
   },
   "AuthError": {

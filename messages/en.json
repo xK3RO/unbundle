@@ -109,9 +109,7 @@
     "preview": {
       "label": "From the sample bill",
       "caption": "Made-up data. Every flag comes from a fixed rule."
-    },
-    "story": "I'm a high school student in California. I built Unbundle so families like mine can check a medical bill before they pay it.",
-    "storyBy": "Rohan, who built Unbundle"
+    }
   },
   "Dashboard": {
     "title": "Dashboard",
@@ -997,7 +995,7 @@
     },
     "built": {
       "title": "Who built it",
-      "body": "Unbundle was built by a student for the Congressional App Challenge, CA-43."
+      "body": "Unbundle was built by a student for the Congressional App Challenge."
     }
   },
   "AuthError": {
