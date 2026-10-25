@@ -7,9 +7,10 @@ import { loadBill, stepHref, type BillSource } from "@/lib/bills/source";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BillSteps } from "@/components/bill-steps";
 import { DeleteBillButton } from "@/components/delete-bill-button";
-import { summarizeConfidence } from "@/lib/bills/extraction-confidence";
+import { isSummaryStatement, summarizeConfidence } from "@/lib/bills/extraction-confidence";
 import { getSourceFileForBill } from "@/lib/bills/source-file-server";
 import { readEntryMethod } from "@/lib/bills/entry-method";
+import { formatCents } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { ReviewTable } from "./review-table";
@@ -40,6 +41,7 @@ export async function ReviewView({ source }: { source: BillSource }) {
 
   const manual = entryMethod === "manual";
   const confidence = summarizeConfidence(bill.lineItems);
+  const summaryOnly = isSummaryStatement(bill, manual);
 
   return (
     <NextIntlClientProvider>
@@ -73,6 +75,25 @@ export async function ReviewView({ source }: { source: BillSource }) {
               >
                 {t("manual.editLines")}
               </Link>
+            </div>
+          ) : null}
+          {summaryOnly ? (
+            <div
+              role="note"
+              className="flex max-w-2xl flex-col gap-3 rounded-lg border bg-muted p-4 text-base"
+            >
+              <p className="flex items-start gap-3">
+                <Info aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+                {t("summaryStatement", { total: formatCents(bill.totalBilledCents) })}
+              </p>
+              {persisted ? (
+                <Link
+                  href={`/bills/${source.id}/letter?type=itemized`}
+                  className="font-medium text-primary underline underline-offset-4 hover:no-underline"
+                >
+                  {t("summaryStatementLink")}
+                </Link>
+              ) : null}
             </div>
           ) : null}
           {confidence.low && !manual ? (

@@ -271,6 +271,8 @@
     },
     "rowsRead": "{count, plural, one {Leímos # fila de su factura.} other {Leímos # filas de su factura.}}",
     "lowConfidenceNote": "La IA marcó muchas filas como inciertas, algo normal con fotos y escaneos. Esas marcas son su propia autoevaluación, no una exactitud medida. Compare cada fila marcada con su factura y corrija lo que no se vea bien antes de continuar.",
+    "summaryStatement": "Esto parece un estado de cuenta resumido. Muestra un total de {total}, pero ningún cargo por separado, así que no hay nada que revisar línea por línea. Pida a la oficina de facturación una factura detallada.",
+    "summaryStatementLink": "Solicitar una factura detallada",
     "manual": {
       "banner": "Usted escribió esta factura a mano, así que revise bien las cantidades y los códigos.",
       "subtitle": "Revise las líneas que escribió y corrija cualquier cosa que no se vea bien.",
