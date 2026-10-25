@@ -109,8 +109,7 @@
     "preview": {
       "label": "From the sample bill",
       "caption": "Made-up data. Every flag comes from a fixed rule."
-    },
-    "story": "I'm a high school student in California. I built Unbundle so families like mine can check a medical bill before they pay it."
+    }
   },
   "Dashboard": {
     "title": "Dashboard",

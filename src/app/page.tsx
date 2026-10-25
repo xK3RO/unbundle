@@ -123,7 +123,6 @@ async function Landing() {
               {t("title")}
             </h1>
             <p className="mt-4 max-w-2xl text-body text-muted-foreground sm:mt-5 sm:text-lead">{t("subtitle")}</p>
-            <p className="mt-6 max-w-xl border-l-2 border-brand pl-4 text-body">{t("story")}</p>
             <Suspense fallback={<HeroActionsSkeleton />}>
               <HeroActions />
             </Suspense>
