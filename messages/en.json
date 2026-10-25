@@ -170,6 +170,8 @@
     "serviceDatesUnknown": "Not found",
     "totalBilled": "Total billed",
     "totalFromRows": "This bill doesn't print a total, so this is the sum of its rows.",
+    "totalCheckOver": "These rows add up to {rows}, but the total printed on the bill is {total}. The upload may include another statement or the same page twice. Check the rows against your bill before you continue.",
+    "totalCheckRepeated": "Page {page} lists the same rows as page {earlier}. The same page may have been uploaded twice. Check those rows against your bill.",
     "progressLabel": "Rows verified",
     "progress": "{verified} of {total} rows verified",
     "needsAttention": "{count, plural, one {# row needs a closer look} other {# rows need a closer look}}",
@@ -269,6 +271,8 @@
     },
     "rowsRead": "{count, plural, one {We read # row from your bill.} other {We read # rows from your bill.}}",
     "lowConfidenceNote": "The AI marked many rows as uncertain, which is normal for photos and scans. Those marks are its own self-assessment, not a measured accuracy. Please compare each marked row with your bill and correct anything that looks off before you continue.",
+    "summaryStatement": "This looks like a summary statement. It shows a total of {total} but no separate charges, so there is nothing to check line by line. Ask the billing office for an itemized bill.",
+    "summaryStatementLink": "Request an itemized bill",
     "manual": {
       "banner": "You typed this bill in, so double-check quantities and codes.",
       "subtitle": "Check the lines you typed and fix anything that looks wrong.",

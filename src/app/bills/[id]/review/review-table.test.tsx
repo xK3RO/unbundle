@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import en from "../../../../../messages/en.json";
 import demoBill from "../../../../../fixtures/review/demo-bill.json";
 import { ExtractedBillSchema } from "@/lib/types";
+import { formatCents } from "@/lib/money";
 import { explainCodeAction } from "@/app/bills/explain-actions";
 import { ReviewTable } from "./review-table";
 
@@ -132,5 +133,51 @@ describe("row summaries on phones", () => {
     for (const name of ["Date", "Code", "Description", "Units", "Unit price", "Charge", "Modifiers"]) {
       expect(screen.getByLabelText(`${name}, row 1`)).toBeTruthy();
     }
+  });
+});
+
+describe("rows that don't fit the printed total", () => {
+  afterEach(cleanup);
+  const overText = /These rows add up to .*, but the total printed on the bill is/;
+
+  it("says nothing for the demo bill, whose rows fit its total", () => {
+    view({});
+    expect(screen.queryByText(overText)).toBeNull();
+    expect(screen.queryByText(/lists the same rows as page/)).toBeNull();
+  });
+
+  it("warns, with both amounts, when the rows add up to more than the printed total", () => {
+    const sum = typed.lineItems.reduce((s, l) => s + l.chargeCents, 0);
+    view({ bill: { ...typed, totalBilledCents: sum - 100, totalPrinted: true } });
+    const note = screen.getByText(overText);
+    expect(note.textContent).toContain(formatCents(sum));
+    expect(note.textContent).toContain(formatCents(sum - 100));
+    // Every row is still shown: nothing is dropped.
+    expect(screen.getByLabelText(`Description, row ${typed.lineItems.length}`)).toBeTruthy();
+  });
+
+  it("does not warn when the total was added up from the rows", () => {
+    view({ bill: { ...typed, totalBilledCents: 0, totalPrinted: false } });
+    expect(screen.queryByText(overText)).toBeNull();
+  });
+
+  it("names a page that repeats an earlier page", () => {
+    const first = typed.lineItems.slice(0, 2).map((l) => ({ ...l, sourcePage: 1 }));
+    const copy = first.map((l, i) => ({ ...l, id: `copy-${i}`, sourcePage: 2 }));
+    view({ bill: { ...typed, totalBilledCents: 10_000_000, lineItems: [...first, ...copy] } });
+    expect(screen.getByText("Page 2 lists the same rows as page 1. The same page may have been uploaded twice. Check those rows against your bill.")).toBeTruthy();
+  });
+
+  it("clears the warning once a misread charge is corrected", async () => {
+    const sum = typed.lineItems.reduce((s, l) => s + l.chargeCents, 0);
+    const last = typed.lineItems.at(-1)!;
+    // No billId, so the edit stays on screen without a (mocked) save reverting it.
+    view({ bill: { ...typed, totalBilledCents: sum - last.chargeCents, totalPrinted: true }, billId: undefined, demo: true });
+    expect(screen.getByText(overText)).toBeTruthy();
+    const input = screen.getByLabelText(`Charge, row ${typed.lineItems.length}`);
+    fireEvent.change(input, { target: { value: "0" } });
+    fireEvent.blur(input);
+    await waitFor(() => expect(screen.queryByText(overText)).toBeNull());
+    expect((screen.getByLabelText(`Charge, row ${typed.lineItems.length}`) as HTMLInputElement).value).toBe(formatCents(0));
   });
 });

@@ -170,6 +170,8 @@
     "serviceDatesUnknown": "No encontradas",
     "totalBilled": "Total facturado",
     "totalFromRows": "Esta factura no muestra un total, así que esta es la suma de sus filas.",
+    "totalCheckOver": "Estas filas suman {rows}, pero el total impreso en la factura es {total}. Es posible que lo que subió incluya otro estado de cuenta o la misma página dos veces. Compare las filas con su factura antes de continuar.",
+    "totalCheckRepeated": "La página {page} tiene las mismas filas que la página {earlier}. Es posible que la misma página se haya subido dos veces. Compare esas filas con su factura.",
     "progressLabel": "Filas verificadas",
     "progress": "{verified} de {total} filas verificadas",
     "needsAttention": "{count, plural, one {# fila necesita una revisión más atenta} other {# filas necesitan una revisión más atenta}}",
@@ -269,6 +271,8 @@
     },
     "rowsRead": "{count, plural, one {Leímos # fila de su factura.} other {Leímos # filas de su factura.}}",
     "lowConfidenceNote": "La IA marcó muchas filas como inciertas, algo normal con fotos y escaneos. Esas marcas son su propia autoevaluación, no una exactitud medida. Compare cada fila marcada con su factura y corrija lo que no se vea bien antes de continuar.",
+    "summaryStatement": "Esto parece un estado de cuenta resumido. Muestra un total de {total}, pero ningún cargo por separado, así que no hay nada que revisar línea por línea. Pida a la oficina de facturación una factura detallada.",
+    "summaryStatementLink": "Solicitar una factura detallada",
     "manual": {
       "banner": "Usted escribió esta factura a mano, así que revise bien las cantidades y los códigos.",
       "subtitle": "Revise las líneas que escribió y corrija cualquier cosa que no se vea bien.",

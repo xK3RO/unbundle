@@ -1,4 +1,4 @@
-import type { LineItem } from "@/lib/types";
+import type { ExtractedBill, LineItem } from "@/lib/types";
 
 /**
  * Summary of how sure the extraction was, for the review screen. Reads only
@@ -23,4 +23,17 @@ export function summarizeConfidence(items: readonly Pick<LineItem, "confidence">
  */
 export function suggestsItemizedRequest(summary: ExtractionConfidence): boolean {
   return summary.rowCount === 0 || summary.low;
+}
+
+/**
+ * A bill read from a file that printed a total but no separate charges: a
+ * summary statement. There is nothing to check line by line, so the review
+ * screen points the user at the itemized-bill request. Typed-in bills are
+ * left out (their total is the sum of the rows they typed).
+ */
+export function isSummaryStatement(
+  bill: Pick<ExtractedBill, "lineItems" | "totalPrinted">,
+  manual: boolean,
+): boolean {
+  return !manual && bill.lineItems.length === 0 && bill.totalPrinted;
 }
