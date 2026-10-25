@@ -16,6 +16,18 @@ export const EXTRACTION_MAX_TOKENS = 16_000;
 export const EXTRACTION_TIMEOUT_MS = 90_000;
 
 /**
+ * One retry when the API turns a request away as rate limited (429) or
+ * overloaded (529): the request was not run, so it is not billed twice. Only
+ * when that answer came back fast, so a retry that runs its full 90 s still
+ * ends inside the route's 120 s limit (15 s + 2 s + 90 s). Timeouts and other
+ * errors are never retried, since a timed-out request may still be billed.
+ */
+export const BUSY_RETRY_DELAY_MS = 2_000;
+export const BUSY_RETRY_WITHIN_MS = 15_000;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
  * Models known to accept output_config.effort. Anything else (for example an
  * older Haiku or Sonnet set through EXTRACTION_MODEL) is sent without it,
  * because an unsupported parameter is a 400 on every call.
@@ -62,9 +74,9 @@ function toContentBlock(file: ExtractionFile): Anthropic.ContentBlockParam {
 /**
  * Vision extraction through the Anthropic Messages API with a JSON-schema
  * output format. One request per chunk (bills over PAGES_PER_CHUNK pages are
- * split and read in parallel), no retries (a timed-out request may still be
- * billed, so retrying could double-bill); the user can retry explicitly and
- * that goes through the per-user rate limit. Nothing about the images or the
+ * split and read in parallel). No retries (a timed-out request may still be
+ * billed, so retrying could double-bill), except one after a fast 429/529.
+ * The user can retry explicitly and that goes through the per-user rate limit. Nothing about the images or the
  * response is logged, and no error carries the response body.
  */
 export class AnthropicExtractor implements BillExtractor {
@@ -73,6 +85,8 @@ export class AnthropicExtractor implements BillExtractor {
     private readonly model: string,
     /** Debug only: attach a redacted status/type/message to provider errors. */
     private readonly diagnostics = false,
+    /** Injected so tests don't wait out the retry pause or read the real clock. */
+    private readonly timing: { sleep: (ms: number) => Promise<void>; now: () => number } = { sleep, now: Date.now },
   ) {}
 
   static fromApiKey(apiKey: string, model: string, diagnostics = false): AnthropicExtractor {
@@ -111,6 +125,28 @@ export class AnthropicExtractor implements BillExtractor {
     return parseModelOutput(mergeChunkOutputs(parts));
   }
 
+  /** Sends one request, retrying once on a fast 429/529 (see BUSY_RETRY_DELAY_MS). */
+  private async send(params: Anthropic.MessageCreateParamsNonStreaming): Promise<Anthropic.Message> {
+    const started = this.timing.now();
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.client.messages.create(params, { timeout: EXTRACTION_TIMEOUT_MS, maxRetries: 0 });
+      } catch (error) {
+        const detail = this.diagnostics ? describeProviderError(error) : undefined;
+        if (error instanceof Anthropic.APIConnectionTimeoutError) throw new ExtractionError("timeout", detail);
+        // 429 (rate limited) and 529 (overloaded) are transient: tell the user to wait, not to retake the photo.
+        if (error instanceof Anthropic.APIError && (error.status === 429 || error.status === 529)) {
+          if (attempt === 1 && this.timing.now() - started <= BUSY_RETRY_WITHIN_MS) {
+            await this.timing.sleep(BUSY_RETRY_DELAY_MS);
+            continue;
+          }
+          throw new ExtractionError("provider_busy", detail);
+        }
+        throw new ExtractionError("provider_error", detail);
+      }
+    }
+  }
+
   /** One schema-constrained request; returns the parsed (not yet validated) JSON. */
   private async request(files: ExtractionFile[], userPrompt: string): Promise<unknown> {
     // Bill first, then the EOB, each introduced so the model knows which is which.
@@ -130,21 +166,7 @@ export class AnthropicExtractor implements BillExtractor {
       },
     } satisfies Anthropic.MessageCreateParamsNonStreaming;
 
-    let response: Anthropic.Message;
-    try {
-      response = await this.client.messages.create(params, {
-        timeout: EXTRACTION_TIMEOUT_MS,
-        maxRetries: 0,
-      });
-    } catch (error) {
-      const detail = this.diagnostics ? describeProviderError(error) : undefined;
-      if (error instanceof Anthropic.APIConnectionTimeoutError) throw new ExtractionError("timeout", detail);
-      // 429 (rate limited) and 529 (overloaded) are transient: tell the user to wait, not to retake the photo.
-      if (error instanceof Anthropic.APIError && (error.status === 429 || error.status === 529)) {
-        throw new ExtractionError("provider_busy", detail);
-      }
-      throw new ExtractionError("provider_error", detail);
-    }
+    const response = await this.send(params);
 
     if (response.stop_reason === "refusal") throw new ExtractionError("refused");
     if (response.stop_reason === "max_tokens" || response.stop_reason === "model_context_window_exceeded") {

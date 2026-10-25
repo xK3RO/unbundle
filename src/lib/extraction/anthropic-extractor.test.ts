@@ -5,6 +5,8 @@ import { runRules } from "@/lib/rules";
 import good from "../../../fixtures/extraction/model-output-good.json";
 import {
   AnthropicExtractor,
+  BUSY_RETRY_DELAY_MS,
+  BUSY_RETRY_WITHIN_MS,
   EFFORT_MODELS,
   EXTRACTION_MAX_TOKENS,
   EXTRACTION_TIMEOUT_MS,
@@ -27,9 +29,12 @@ function reply(partial: Record<string, unknown>) {
 }
 const textReply = (text: string) => reply({ content: [{ type: "text", text }] });
 
-function extractorWith(create: ReturnType<typeof vi.fn>) {
+/** The retry pause resolves at once and the clock stands still unless a test moves it. */
+const instant = () => ({ sleep: vi.fn().mockResolvedValue(undefined), now: vi.fn().mockReturnValue(0) });
+
+function extractorWith(create: ReturnType<typeof vi.fn>, timing = instant()) {
   const client = { messages: { create } } as unknown as MessagesClient;
-  return new AnthropicExtractor(client, "test-model");
+  return new AnthropicExtractor(client, "test-model", false, timing);
 }
 
 async function codeOf(promise: Promise<unknown>) {
@@ -177,8 +182,72 @@ describe("AnthropicExtractor failure handling", () => {
     expect(error).toBeInstanceOf(ExtractionError);
     expect((error as ExtractionError).code).toBe(code);
     expect((error as ExtractionError).message).toBe(code); // message is the opaque code only
-    expect(create).toHaveBeenCalledTimes(1); // never retried
+    // Only a fast 429/529 is retried, once; everything else goes out a single time.
+    expect(create).toHaveBeenCalledTimes(code === "provider_busy" ? 2 : 1);
     expectNothingLogged();
+  });
+});
+
+describe("retrying a busy provider", () => {
+  it.each([429, 529])("retries once after a %s and returns the bill", async (status) => {
+    const timing = instant();
+    const create = vi.fn().mockRejectedValueOnce(apiError(status)).mockResolvedValueOnce(textReply(JSON.stringify(good)));
+    const bill = await extractorWith(create, timing).extractBill([png("bill")]);
+    expect(bill.lineItems).toHaveLength(good.lineItems.length);
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(timing.sleep).toHaveBeenCalledExactlyOnceWith(BUSY_RETRY_DELAY_MS);
+  });
+
+  it("gives up with provider_busy when the retry is turned away too", async () => {
+    const create = vi.fn().mockRejectedValue(apiError(529));
+    expect(await codeOf(extractorWith(create).extractBill([png("bill")]))).toBe("provider_busy");
+    expect(create).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry when the busy answer came back slowly", async () => {
+    const timing = instant();
+    timing.now.mockReturnValueOnce(0).mockReturnValue(BUSY_RETRY_WITHIN_MS + 1);
+    const create = vi.fn().mockRejectedValue(apiError(529));
+    expect(await codeOf(extractorWith(create, timing).extractBill([png("bill")]))).toBe("provider_busy");
+    expect(create).toHaveBeenCalledOnce();
+    expect(timing.sleep).not.toHaveBeenCalled();
+  });
+
+  it("still retries at exactly the time limit", async () => {
+    const timing = instant();
+    timing.now.mockReturnValueOnce(0).mockReturnValue(BUSY_RETRY_WITHIN_MS);
+    const create = vi.fn().mockRejectedValueOnce(apiError(429)).mockResolvedValueOnce(textReply(JSON.stringify(good)));
+    await extractorWith(create, timing).extractBill([png("bill")]);
+    expect(create).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ["a timeout", new Anthropic.APIConnectionTimeoutError()],
+    ["HTTP 500", apiError(500)],
+    ["HTTP 400", apiError(400)],
+  ])("never retries %s", async (_name, error) => {
+    const timing = instant();
+    const create = vi.fn().mockRejectedValue(error);
+    await codeOf(extractorWith(create, timing).extractBill([png("bill")]));
+    expect(create).toHaveBeenCalledOnce();
+    expect(timing.sleep).not.toHaveBeenCalled();
+  });
+
+  it("keeps the worst case inside the route's 120 s limit", () => {
+    expect(BUSY_RETRY_WITHIN_MS + BUSY_RETRY_DELAY_MS + EXTRACTION_TIMEOUT_MS).toBeLessThan(120_000);
+  });
+
+  it("retries one page of a long bill without failing the others", async () => {
+    let calls = 0;
+    const create = vi.fn().mockImplementation(async () => {
+      calls++;
+      if (calls === 2) throw apiError(529);
+      return textReply(JSON.stringify(good));
+    });
+    const jpeg = (n: number): ExtractionFile => ({ kind: "bill", mimeType: "image/jpeg", bytes: new Uint8Array([n]) });
+    const bill = await extractorWith(create).extractBill([jpeg(1), jpeg(2)]);
+    expect(create).toHaveBeenCalledTimes(3);
+    expect(bill.lineItems).toHaveLength(good.lineItems.length * 2);
   });
 });
 
