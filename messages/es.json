@@ -170,6 +170,8 @@
     "serviceDatesUnknown": "No encontradas",
     "totalBilled": "Total facturado",
     "totalFromRows": "Esta factura no muestra un total, así que esta es la suma de sus filas.",
+    "totalCheckOver": "Estas filas suman {rows}, pero el total impreso en la factura es {total}. Es posible que lo que subió incluya otro estado de cuenta o la misma página dos veces. Compare las filas con su factura antes de continuar.",
+    "totalCheckRepeated": "La página {page} tiene las mismas filas que la página {earlier}. Es posible que la misma página se haya subido dos veces. Compare esas filas con su factura.",
     "progressLabel": "Filas verificadas",
     "progress": "{verified} de {total} filas verificadas",
     "needsAttention": "{count, plural, one {# fila necesita una revisión más atenta} other {# filas necesitan una revisión más atenta}}",

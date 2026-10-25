@@ -170,6 +170,8 @@
     "serviceDatesUnknown": "Not found",
     "totalBilled": "Total billed",
     "totalFromRows": "This bill doesn't print a total, so this is the sum of its rows.",
+    "totalCheckOver": "These rows add up to {rows}, but the total printed on the bill is {total}. The upload may include another statement or the same page twice. Check the rows against your bill before you continue.",
+    "totalCheckRepeated": "Page {page} lists the same rows as page {earlier}. The same page may have been uploaded twice. Check those rows against your bill.",
     "progressLabel": "Rows verified",
     "progress": "{verified} of {total} rows verified",
     "needsAttention": "{count, plural, one {# row needs a closer look} other {# rows need a closer look}}",

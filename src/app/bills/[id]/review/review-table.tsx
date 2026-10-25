@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { formatCents } from "@/lib/money";
+import { checkRowsAgainstTotal } from "@/lib/bills/total-check";
 import type { ExtractedBill, LineItem } from "@/lib/types";
 import {
   parseDate,
@@ -207,6 +208,8 @@ export function ReviewTable({
       : t("serviceDatesUnknown");
 
   const progressText = t("progress", { verified: verifiedCount, total: items.length });
+  // Recomputed from the rows as edited, so fixing a misread charge clears it.
+  const totalCheck = checkRowsAgainstTotal(bill, items);
 
   const showSource = !(manual && source.kind === "unavailable");
   const sourceDescription = manual ? t("manual.sourceDescription") : t("source.description");
@@ -235,6 +238,28 @@ export function ReviewTable({
                 )}
               </div>
             </dl>
+            {totalCheck.overTotal || totalCheck.repeatedPage ? (
+              <div role="note" className="flex flex-col gap-2 rounded-lg border border-warning-border/50 bg-warning-surface p-3 text-warning-foreground">
+                {totalCheck.overTotal ? (
+                  <p className="flex items-start gap-2">
+                    <TriangleAlert aria-hidden="true" className="mt-1 size-4 shrink-0" />
+                    {t("totalCheckOver", {
+                      rows: formatCents(totalCheck.overTotal.rowsCents),
+                      total: formatCents(totalCheck.overTotal.totalCents),
+                    })}
+                  </p>
+                ) : null}
+                {totalCheck.repeatedPage ? (
+                  <p className="flex items-start gap-2">
+                    <TriangleAlert aria-hidden="true" className="mt-1 size-4 shrink-0" />
+                    {t("totalCheckRepeated", {
+                      page: totalCheck.repeatedPage.page,
+                      earlier: totalCheck.repeatedPage.earlierPage,
+                    })}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             <div className="flex flex-col gap-3" aria-live="polite">
               <Progress
                 value={verifiedCount}
