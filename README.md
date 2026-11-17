@@ -207,3 +207,7 @@ Useful commands:
 - Add more languages and a reading-level pass on every explanation.
 - Have a billing advocate or patient-rights organisation review the checks and the letter wording.
 - Add a CPT/HCPCS reference note on every finding so the user can look up the code themselves.
+
+## License
+
+MIT. See [LICENSE](LICENSE). The CMS and HHS reference data the app loads is public US government data and is not covered by this license.
