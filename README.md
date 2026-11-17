@@ -2,7 +2,9 @@
 
 Unbundle audits medical bills. You upload a photo or PDF of a bill, it reads the line items, runs fixed, tested checks against public Medicare data, and tells you what is worth asking about in plain English or Spanish. You leave with a report and a letter you can take to the billing office.
 
-**Demo:** `<DEMO LINK PLACEHOLDER>` (the sample bill needs no sign-in)
+**Live app:** https://unbundle-phi.vercel.app. To try it without signing in, open the sample bill at https://unbundle-phi.vercel.app/demo. All of its data is made up.
+
+![Unbundle home page, showing the sample bill's two findings](docs/screenshots/home.png)
 
 ## The problem
 
@@ -32,6 +34,18 @@ flowchart LR
 ```
 
 Why this split matters: model output is validated against a schema, you can review and correct the bill's line items before the report is produced, and the rules are plain functions with unit tests. Amounts read from an optional EOB are used by two rules but are not shown for editing, so those two findings rest on an unreviewed reading. The same bill and the same data always produce the same findings, with no randomness, no clock and no network access.
+
+## Screenshots
+
+These use the made-up sample bill.
+
+Review: you check each row the AI read against the bill and fix anything that is wrong. Rows the AI was unsure about are flagged.
+
+![Review screen with seven rows from the sample bill, three flagged](docs/screenshots/review.png)
+
+Findings: each finding names the check that flagged it, the line involved and the amount at stake.
+
+![Findings report for the sample bill: $322.22 across two findings](docs/screenshots/findings.png)
 
 ## The checks
 
@@ -72,6 +86,10 @@ Each rule was run against the fixture bills and compared with the findings expec
 
 **Read this honestly.** These numbers come from **16 synthetic fixture bills** that I wrote alongside the rules, 6 of them (4 traps and 2 clean bills) designed to catch false alarms. They show the rules behave as designed. They are not a measure of real-world accuracy: every rule has only one or two true cases, and real bills are messier. A finding must match on rule, line item IDs and amount at stake to count as correct. The reading step (AI extraction) is not part of this table.
 
+### Reading accuracy
+
+The reading step was tested separately, on 38 synthetic bill images (made-up bills, not real ones): in the documented run, 37 of 38 were read with every field right (the one miss was a single date on an image with heavy JPEG artifacts), and one rotated photo varies between runs. Details are in [docs/extraction-eval.md](docs/extraction-eval.md). Accuracy on real phone photos of real bills has not been measured yet, which is why the review screen asks you to check every row.
+
 ## Data sources
 
 All reference data is public and loaded into Postgres as read-only tables.
@@ -104,23 +122,71 @@ This summary matches the in-app `/privacy` page.
 - Cookies and browser storage: a language cookie (`NEXT_LOCALE`, "en" or "es", one year) only if you choose a language; session cookies from Supabase when you sign in; and your Light or Dark choice in `localStorage` under `unbundle-theme`. There are no analytics, advertising or tracking cookies.
 - The sample bill is made up. No real bills are in this repository, and bill contents are never logged.
 
+## How AI was used
+
+- **Building it:** I used Claude Code (Anthropic's coding assistant) to write most of the code, tests and first drafts of the copy, from prompts I wrote. I made the design decisions, reviewed its work, tested in the browser and set up the database and hosting.
+- **In the app:** an Anthropic model (Claude Haiku) reads an uploaded bill into structured data, and gives short general definitions of billing codes when you tap "What is this?". It does not decide findings; the rules in `src/lib/rules` do.
+- **No learning from users:** the app does not train on or learn from anyone's bills. See the Privacy section for what Anthropic's terms say about API data.
+
 ## Tech stack
 
 Next.js (App Router) and TypeScript, Tailwind and shadcn/ui, Supabase (Google auth, Postgres with row-level security, storage), the Anthropic SDK (extraction and explanations only), Zod at every external boundary, next-intl (English and Spanish), `@react-pdf/renderer` for the report and letter, Vitest for tests.
 
-## Setup
+## Run it locally
 
-Requirements: Node 20+, a Supabase project, an Anthropic API key (optional in mock mode).
+You need Node 20 or newer and npm.
+
+### Quick start: the sample bill, no accounts needed
 
 ```bash
+git clone https://github.com/xK3RO/unbundle.git
+cd unbundle
 npm install
-# create .env.local; see docs/DEPLOY.md for the full list of variables
+```
+
+Create a file called `.env.local` in the project folder with these two lines. The sample flow never talks to Supabase, so any values work here:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=any-value
+```
+
+Then run:
+
+```bash
 npm run dev
 ```
 
-- With `EXTRACTION_MODE` unset the app uses a mock extractor, so the sample bill and the whole flow work without an Anthropic key. Set `EXTRACTION_MODE=anthropic` with `ANTHROPIC_API_KEY` for real extraction.
-- Apply `supabase/migrations/0001` to `0005` in order (`0006`, typed-in bills, is a draft until [docs/manual-entry-test.md](docs/manual-entry-test.md) has been run), then import reference data with `node scripts/import-reference.mjs` and `node scripts/import-poverty.mjs --confirm` (needs the service role key locally). In production the service role key is set in exactly one place, for account deletion (`src/lib/account/admin.ts`); see [docs/DEPLOY.md](docs/DEPLOY.md).
-- Deployment, Auth and Google OAuth setup: [docs/DEPLOY.md](docs/DEPLOY.md).
+Open http://localhost:3000/demo and pick a sample bill. With `EXTRACTION_MODE` unset, the app uses a mock reader, so no Anthropic key is needed.
+
+### Full setup: sign-in and real uploads
+
+1. Create a Supabase project. Put its URL and anon (publishable) key in `.env.local` as above.
+2. In the Supabase SQL editor, run `supabase/migrations/0001` to `0005` in order. (`0006`, typed-in bills, is a draft until [docs/manual-entry-test.md](docs/manual-entry-test.md) has been run.)
+3. Add the service role key to `.env.local` as `SUPABASE_SERVICE_ROLE_KEY`, then load the public reference data:
+
+   ```bash
+   node scripts/import-reference.mjs
+   node scripts/import-poverty.mjs --confirm
+   ```
+
+4. Turn on Google sign-in in Supabase Auth (steps in [docs/DEPLOY.md](docs/DEPLOY.md)).
+5. For real bill reading, add `ANTHROPIC_API_KEY` and set `EXTRACTION_MODE=anthropic`. Leave it unset to keep the mock reader.
+6. Run `npm run dev` and sign in.
+
+Environment variables (keep the secret ones in `.env.local`, which is never committed):
+
+| Variable | Needed for | Secret? |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Always | No |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Always | No (row-level security protects data) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Reference-data import scripts; in production only for "Delete my account" | Yes |
+| `ANTHROPIC_API_KEY` | Real bill reading and code definitions | Yes |
+| `EXTRACTION_MODE` | `mock` (default) or `anthropic` | No |
+| `EXPLAIN_MODE` | `mock` (default) or `anthropic` for "What is this?" | No |
+| `EXTRACTION_ENABLED` | Kill switch; set `false` to turn reading off | No |
+
+The full list, and how to deploy (Vercel, Supabase Auth, Google OAuth), is in [docs/DEPLOY.md](docs/DEPLOY.md).
 
 Useful commands:
 
@@ -141,3 +207,7 @@ Useful commands:
 - Add more languages and a reading-level pass on every explanation.
 - Have a billing advocate or patient-rights organisation review the checks and the letter wording.
 - Add a CPT/HCPCS reference note on every finding so the user can look up the code themselves.
+
+## License
+
+MIT. See [LICENSE](LICENSE). The CMS and HHS reference data the app loads is public US government data and is not covered by this license.
