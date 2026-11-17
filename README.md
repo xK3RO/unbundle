@@ -47,6 +47,10 @@ Findings: each finding names the check that flagged it, the line involved and th
 
 ![Findings report for the sample bill: $322.22 across two findings](docs/screenshots/findings.png)
 
+The same report in Spanish:
+
+![Findings report for the sample bill in Spanish](docs/screenshots/findings-es.png)
+
 ## The checks
 
 Ten checks: nine rules that look at the bill, plus an optional Good Faith Estimate comparison for people without insurance. Seven of the nine rules run on every bill. Two (denied, then billed; and balance billing) run only when an EOB is uploaded. The financial assistance estimate is a separate optional step, not a check of the bill.

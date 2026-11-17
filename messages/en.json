@@ -1653,6 +1653,11 @@
         "p2": "Separately, if you open “What is this?” on a line, the AI gives a general definition of that billing code. It does not explain or decide your findings.",
         "p3": "Findings are things worth asking about, not certain mistakes. One check compares prices with Medicare, and the 5 times threshold it uses is our own choice, not a legal standard."
       },
+      "priceScope": {
+        "q": "Why weren't some charges on my bill checked for price?",
+        "p1": "The price check compares each billing code with the Medicare Physician Fee Schedule for Los Angeles. It flags a charge only when it is more than 5 times the Medicare price.",
+        "p2": "Lines that are not on that schedule are skipped, such as hospital facility charges, lab tests and anesthesia, along with lines that have no billing code. A skipped line is not a sign that its price is fair or unfair. It only means this check could not compare it."
+      },
       "privacy": {
         "q": "What happens to my bill?"
       }
