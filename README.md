@@ -122,12 +122,6 @@ This summary matches the in-app `/privacy` page.
 - Cookies and browser storage: a language cookie (`NEXT_LOCALE`, "en" or "es", one year) only if you choose a language; session cookies from Supabase when you sign in; and your Light or Dark choice in `localStorage` under `unbundle-theme`. There are no analytics, advertising or tracking cookies.
 - The sample bill is made up. No real bills are in this repository, and bill contents are never logged.
 
-## How AI was used
-
-- **Building it:** I used Claude Code (Anthropic's coding assistant) to write most of the code, tests and first drafts of the copy, from prompts I wrote. I made the design decisions, reviewed its work, tested in the browser and set up the database and hosting.
-- **In the app:** an Anthropic model (Claude Haiku) reads an uploaded bill into structured data, and gives short general definitions of billing codes when you tap "What is this?". It does not decide findings; the rules in `src/lib/rules` do.
-- **No learning from users:** the app does not train on or learn from anyone's bills. See the Privacy section for what Anthropic's terms say about API data.
-
 ## Tech stack
 
 Next.js (App Router) and TypeScript, Tailwind and shadcn/ui, Supabase (Google auth, Postgres with row-level security, storage), the Anthropic SDK (extraction and explanations only), Zod at every external boundary, next-intl (English and Spanish), `@react-pdf/renderer` for the report and letter, Vitest for tests.
