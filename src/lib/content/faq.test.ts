@@ -30,7 +30,7 @@ function answerText(messages: typeof en | typeof es): string {
 }
 
 describe("faq structure", () => {
-  it("has the four agreed groups and eleven questions, in order", () => {
+  it("has the four agreed groups and twelve questions, in order", () => {
     expect(FAQ_GROUPS.map((g) => g.id)).toEqual(["bill", "noInsurance", "california", "unbundle"]);
     expect(items.map((i) => i.id)).toEqual([
       "itemized",
@@ -43,6 +43,7 @@ describe("faq structure", () => {
       "mue",
       "ptp",
       "decides",
+      "priceScope",
       "privacy",
     ]);
   });

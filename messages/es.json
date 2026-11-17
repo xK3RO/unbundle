@@ -1653,6 +1653,11 @@
         "p2": "Por separado, si abre «¿Qué es esto?» en una fila, la IA da una definición general de ese código de facturación. No explica ni decide sus hallazgos.",
         "p3": "Los hallazgos son cosas que vale la pena preguntar, no errores seguros. Una revisión compara precios con Medicare, y el umbral de 5 veces que usa es una elección propia, no un estándar legal."
       },
+      "priceScope": {
+        "q": "¿Por qué no se revisó el precio de algunos cargos de mi factura?",
+        "p1": "La revisión de precios compara cada código de facturación con la Lista de Tarifas de Médicos de Medicare para Los Ángeles. Solo señala un cargo cuando es más de 5 veces el precio de Medicare.",
+        "p2": "Se omiten las filas que no están en esa lista, como cargos de instalaciones hospitalarias, pruebas de laboratorio y anestesia, junto con las filas que no tienen código de facturación. Que se omita una fila no significa que su precio sea justo o injusto. Solo significa que esta revisión no pudo compararla."
+      },
       "privacy": {
         "q": "¿Qué pasa con mi factura?"
       }

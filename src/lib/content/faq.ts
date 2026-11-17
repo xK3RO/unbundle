@@ -89,6 +89,7 @@ export const FAQ_GROUPS: readonly FaqGroup[] = [
       { id: "mue", paragraphs: 2, sources: ["cmsMue"] },
       { id: "ptp", paragraphs: 3, sources: ["cmsPtp"] },
       { id: "decides", paragraphs: 3, sources: ["methodology", "about"] },
+      { id: "priceScope", paragraphs: 2, sources: ["methodology"] },
       { id: "privacy", paragraphs: 0, sources: ["privacy"], fromPrivacyPage: true },
     ],
   },
